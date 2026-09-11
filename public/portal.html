@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Помощник ХМАО</title>
+<style>
+:root{--b:#07396f;--g:#4fbe3e;--bg:#f6f8fc;--line:#dce5ef;--mut:#75849a;--txt:#14213d}
+*{box-sizing:border-box}body{margin:0;font:14px Arial,sans-serif;background:var(--bg);color:var(--txt)}button,input,select{font:inherit}button{cursor:pointer}.auth{min-height:100vh;display:grid;place-items:center;background:linear-gradient(135deg,#062f61 0 45%,#f6f8fc 45%)}.box{width:min(430px,92vw);background:#fff;padding:26px;border-radius:18px;box-shadow:0 20px 60px #0002}.tabs{display:flex;margin-bottom:16px}.tabs button{flex:1;border:0;padding:11px;background:#eef2f7;font-weight:800}.tabs .on{background:var(--g);color:#fff}.box input{width:100%;padding:12px;margin:7px 0;border:1px solid #ccd6e0;border-radius:9px}.primary{width:100%;padding:12px;border:0;border-radius:9px;background:var(--g);color:#fff;font-weight:900}.hint{font-size:12px;color:var(--mut);margin:8px 0 14px}.msg{margin-top:10px;font-size:12px}.shell{display:grid;grid-template-columns:220px 1fr;min-height:100vh}.side{position:sticky;top:0;height:100vh;padding:18px 14px;color:#fff;background:linear-gradient(#062f61,#075a9d);display:flex;flex-direction:column}.logo{font-size:20px;font-weight:900;margin:4px 6px 18px}.logo span{display:block;color:#63cf50;font-size:26px}.nav{display:grid;gap:6px}.nav button{border:0;background:transparent;color:#fff;text-align:left;padding:11px 12px;border-radius:9px;font-weight:800}.nav button.on,.nav button:hover{background:var(--g)}.who{margin-top:auto;border-top:1px solid #ffffff22;padding:14px 6px}.who button{border:0;background:transparent;color:#fff;padding:8px 0}.main{min-width:0}.top{height:58px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 22px;position:sticky;top:0;z-index:5}.top b{font-size:21px}.top button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 10px}.page{padding:22px}.hero,.card,.panel,.req{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:14px}.card strong{display:block;font-size:28px}.mut{color:var(--mut)}.actions{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.actions button{border:1px solid var(--line);background:#fff;border-radius:9px;padding:9px 13px;font-weight:800}.req{margin:10px 0}.req-head{display:flex;justify-content:space-between;gap:10px}.status{padding:5px 9px;border-radius:99px;font-size:11px;font-weight:900;height:max-content}.pending{background:#fff3cd;color:#8a6500}.approved{background:#dcfce7;color:#167a3d}.rejected{background:#fee2e2;color:#b42318}.req-controls{display:grid;grid-template-columns:220px 1fr;gap:12px;margin-top:12px}.req-controls select{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px}.hidden{display:flex;gap:6px;flex-wrap:wrap}.hidden label{background:#f7f9fc;border:1px solid var(--line);border-radius:7px;padding:6px 8px;font-size:11px}.req-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}.req-actions button{border:0;border-radius:8px;padding:10px 14px;font-weight:900}.ok{background:#4fbe3e;color:#fff}.bad{background:#ef4444;color:#fff}.save{background:#eaf2ff;color:#1951a2}.panel h2{margin-top:0}.info{padding:12px 14px;background:#edf7ff;border:1px solid #cfe6fb;border-radius:10px;color:#23567d}.mobile-menu{display:none}
+@media(max-width:900px){.shell{grid-template-columns:1fr}.side{position:fixed;width:220px;z-index:20;transform:translateX(-105%);transition:.2s}.side.open{transform:none}.grid{grid-template-columns:1fr 1fr}.mobile-menu{display:inline-block}.req-controls{grid-template-columns:1fr}}
+@media(max-width:560px){.grid{grid-template-columns:1fr}.page{padding:12px}}
+</style>
+</head>
+<body><div id="app"></div>
+<script>
+const API='https://lwcqlsjugwrfzaltchhe.supabase.co/functions/v1/hmao-assistant-auth';
+const CHECKS='https://lwcqlsjugwrfzaltchhe.supabase.co/functions/v1/hmao-assistant-checks';
+const TK='hmao_assistant_token';
+let me=null,cur='home';
+const app=document.getElementById('app');
+const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+async function post(u,b){const r=await fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||'Ошибка');return d}
+const api=(action,p={})=>post(API,{action,...p});
+const N={home:'Главная',schedules:'Графики',checks:'Точечные проверки',combo:'COMBO калькулятор',training:'Обучение',requests:'Заявки'};
+
+function auth(reg=false){
+ app.innerHTML=`<div class="auth"><div class="box">
+ <div class="tabs"><button id="ti" class="${!reg?'on':''}">Вход</button><button id="tr" class="${reg?'on':''}">Регистрация</button></div>
+ <h2>Помощник ХМАО</h2>
+ <p class="hint">${reg?'Для заявки на доступ нужны только ФИО и пароль. Электронная почта не требуется.':'Войдите по ФИО и паролю.'}</p>
+ <input id="fio" autocomplete="name" placeholder="ФИО" required>
+ <input id="pwd" type="password" autocomplete="${reg?'new-password':'current-password'}" placeholder="Пароль" required>
+ <button id="go" class="primary">${reg?'Отправить заявку':'Войти'}</button><div id="msg" class="msg"></div>
+ </div></div>`;
+ ti.onclick=()=>auth(false); tr.onclick=()=>auth(true);
+ go.onclick=async()=>{const f=fio.value.trim(),p=pwd.value,m=msg;if(!f||!p){m.textContent='Введите ФИО и пароль.';return}try{m.textContent='';if(reg){await api('register',{fio:f,password:p});m.textContent='Заявка отправлена. После одобрения администратором сможете войти.';fio.value='';pwd.value=''}else{const d=await api('login',{fio:f,password:p});localStorage.setItem(TK,d.token);me=d.user;layout()}}catch(e){m.textContent=e.message}}
+}
+
+function layout(){
+ const items=['home','schedules','checks','combo','training']; if(me.role==='admin')items.push('requests');
+ app.innerHTML=`<div class="shell"><aside class="side" id="side"><div class="logo">Помощник <span>ХМАО</span></div><div class="nav">${items.map(x=>`<button data-v="${x}">${N[x]}</button>`).join('')}</div><div class="who"><b>${esc(me.fio)}</b><br><span>${esc(me.role||'')}</span><br><button id="out">Выйти</button></div></aside><main class="main"><div class="top"><div><button id="menu" class="mobile-menu">☰</button> <b id="title">Главная</b></div><button id="refresh">↻ Обновить</button></div><div id="content"></div></main></div>`;
+ document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>view(b.dataset.v)); menu.onclick=()=>side.classList.toggle('open'); out.onclick=()=>{localStorage.removeItem(TK);auth()}; refresh.onclick=()=>view(cur); view('home')
+}
+function view(v){cur=v;title.textContent=N[v];document.querySelectorAll('[data-v]').forEach(b=>b.classList.toggle('on',b.dataset.v===v));side.classList.remove('open');if(v==='home')home();else if(v==='requests')requests();else if(v==='schedules')schedules();else if(v==='checks')checks();else if(v==='combo')combo();else training()}
+function home(){content.innerHTML=`<div class="page"><div class="hero"><h1>ХМАО</h1><p class="mut">Вместе делаем регион сильнее.</p><div class="grid"><div class="card"><strong>15</strong>торговых точек</div><div class="card"><strong>2</strong>ТМ</div><div class="card"><strong>24/7</strong>доступ</div><div class="card"><strong>ФИО + пароль</strong><span class="mut">без электронной почты</span></div></div></div></div>`}
+async function schedules(){content.innerHTML='<div class="page"><h1>Графики</h1><div class="panel">Загрузка…</div></div>';try{const d=await api('getSchedule',{token:localStorage.getItem(TK),month:'2026-09'});content.innerHTML=`<div class="page"><h1>Графики</h1><div class="panel"><h2>Сентябрь 2026</h2><p class="mut">Данные графика доступны. Раздел работает через текущий защищённый backend.</p><div class="info">Если нужен полный табличный вид графиков как раньше, он сохраняется в основной рабочей версии сайта.</div></div></div>`}catch(e){content.innerHTML=`<div class="page"><h1>Графики</h1><div class="panel">${esc(e.message)}</div></div>`}}
+async function checks(){content.innerHTML='<div class="page"><h1>Точечные проверки</h1><div class="panel">Загрузка…</div></div>';try{const d=await post(CHECKS,{token:localStorage.getItem(TK)});content.innerHTML=`<div class="page"><h1>Точечные проверки</h1><div class="panel"><h2>Данные загружены</h2><p>Записей: <b>${(d.records||[]).length}</b></p><p class="mut">Используется текущий backend точечных проверок.</p></div></div>`}catch(e){content.innerHTML=`<div class="page"><h1>Точечные проверки</h1><div class="panel">${esc(e.message)}</div></div>`}}
+function combo(){content.innerHTML=`<div class="page"><h1>COMBO калькулятор</h1><div class="panel"><p>Раздел доступен в основной рабочей версии.</p></div></div>`}
+function training(){content.innerHTML=`<div class="page"><h1>Обучение</h1><div class="panel"><p>Раздел доступен пользователям после одобрения доступа.</p></div></div>`}
+const SECS=['schedules','checks','combo','training'],LAB={schedules:'Графики',checks:'Точечные проверки',combo:'COMBO калькулятор',training:'Обучение'};
+async function requests(){
+ content.innerHTML='<div class="page"><h1>Заявки</h1><div id="rq">Загрузка…</div></div>';
+ try{const users=(await api('listUsers',{token:localStorage.getItem(TK)})).users||[];
+ rq.innerHTML=users.map(u=>`<div class="req" data-id="${u.id}"><div class="req-head"><div><b>${esc(u.fio)}</b><div class="mut">${esc(u.status)}</div></div><span class="status ${esc(u.status)}">${esc(u.status)}</span></div><div class="req-controls"><label><b>Тип доступа</b><select class="role"><option value="full" ${u.access_role==='full'?'selected':''}>Полный доступ</option><option value="rdo" ${u.access_role==='rdo'?'selected':''}>РДО / ограниченный</option></select></label><div class="hidden">${SECS.map(k=>`<label><input type="checkbox" value="${k}" ${u.rdo_hidden_sections?.includes(k)?'checked':''}> ${LAB[k]}</label>`).join('')}</div></div><div class="req-actions"><button class="ok">✓ Одобрить</button><button class="bad">✕ Отклонить</button><button class="save">Сохранить доступ</button></div></div>`).join('')||'<div class="panel">Заявок нет</div>';
+ document.querySelectorAll('.req').forEach(r=>{r.querySelector('.ok').onclick=()=>setAccess(r,'approved');r.querySelector('.bad').onclick=()=>setAccess(r,'rejected');r.querySelector('.save').onclick=()=>setAccess(r,'approved')})
+ }catch(e){rq.textContent=e.message}
+}
+async function setAccess(r,status){try{await api('setAccess',{token:localStorage.getItem(TK),userId:r.dataset.id,status,role:r.querySelector('.role').value,hidden:[...r.querySelectorAll('.hidden input:checked')].map(x=>x.value)});requests()}catch(e){alert('Не удалось сохранить: '+e.message)}}
+(async()=>{const t=localStorage.getItem(TK);if(!t)return auth();try{me=(await api('me',{token:t})).user;layout()}catch{localStorage.removeItem(TK);auth()}})();
+</script></body></html>
